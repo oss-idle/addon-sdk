@@ -1,7 +1,7 @@
 # __ADDON_NAME__
 
-An add-on for [osu!idle](https://github.com/osu-idle/osu-idle), built with the
-[osu!idle Addon SDK](https://github.com/osu-idle/addon-sdk).
+An add-on for [oss!idle](https://github.com/oss-idle/oss-idle), built with the
+[oss!idle Addon SDK](https://github.com/oss-idle/addon-sdk).
 
 ## Build
 

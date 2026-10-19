@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * npx @osu-idle/addon-sdk-create@latest my-addon
+ * npx @oss-idle/addon-sdk-create@latest my-addon
  *
  * A thin front door. The scaffolding itself lives in the SDK, so `npm create`
- * and `osu-idle-addon init` cannot drift apart - this only parses arguments and
+ * and `oss-idle-addon init` cannot drift apart - this only parses arguments and
  * prints what happened.
  */
-import { scaffold, TEMPLATE_NAMES } from '@osu-idle/addon-sdk/scaffold';
+import { scaffold, TEMPLATE_NAMES } from '@oss-idle/addon-sdk/scaffold';
 import { relative, resolve } from 'node:path';
 
 const args = process.argv.slice(2);
@@ -24,9 +24,9 @@ const positional = () => {
 };
 
 if (flag('help') || flag('h')) {
-	console.log(`Create an osu!idle add-on.
+	console.log(`Create an oss!idle add-on.
 
-  npx @osu-idle/addon-sdk-create@latest [dir]
+  npx @oss-idle/addon-sdk-create@latest [dir]
     --name "My Add-on"      display name (default: the directory name)
     --template ${TEMPLATE_NAMES.join('|')}     starting point (default: react)
     --license <spdx>        default: AGPL-3.0-only

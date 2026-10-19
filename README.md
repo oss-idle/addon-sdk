@@ -2,17 +2,17 @@
   <img src="icon.svg" alt="" width="112">
 </p>
 
-<h1 align="center">osu!idle Addon SDK</h1>
+<h1 align="center">oss!idle Addon SDK</h1>
 
 <p align="center">
-  Build <a href="https://github.com/osu-idle/osu-idle">osu!idle</a> add-ons in TypeScript, with your dependencies bundled.
+  Build <a href="https://github.com/oss-idle/oss-idle">oss!idle</a> add-ons in TypeScript, with your dependencies bundled.
 </p>
 
 ## Quickstart
 
 ```sh
 name=my-addon
-npx @osu-idle/addon-sdk-create@latest "$name"
+npx @oss-idle/addon-sdk-create@latest "$name"
 cd "$name" && npm install && npm run build
 ```
 
@@ -45,7 +45,7 @@ Publishing uses npm [trusted publishing](https://docs.npmjs.com/trusted-publishe
 
 ## A reference add-on
 
-[osu!idle sim](https://github.com/osu-idle/addon-sim) is built with this SDK and exercises most of it: a worker pool, an inlined WebAssembly module, the game's own simulation bundled from source, persisted settings, and playlist writes into the client's database.
+[oss!idle sim](https://github.com/oss-idle/addon-sim) is built with this SDK and exercises most of it: a worker pool, an inlined WebAssembly module, the game's own simulation bundled from source, persisted settings, and playlist writes into the client's database.
 
 ## Licence
 

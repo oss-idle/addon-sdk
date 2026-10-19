@@ -9,14 +9,16 @@
  * **Keys are namespaced deliberately.** The client writes its settings under
  * bare, unprefixed keys (`db/settings.ts`), and reads them back with a bare
  * `JSON.parse`. An add-on writing a colliding key would corrupt a game setting,
- * so everything here lives under `osu-idle-addon:<namespace>`.
+ * so everything here lives under `oss-idle-addon:<namespace>`.
  *
  * Stored values are merged **over** the defaults on load, so adding a setting in
  * a later version does not invalidate what a player already saved, and only keys
  * the defaults still declare are kept - a removed setting cleans itself up.
  */
 
-const PREFIX = 'osu-idle-addon:';
+const PREFIX = 'oss-idle-addon:';
+/** {@link PREFIX} before the rename to oss!idle: still read, so saved settings carry over. */
+const LEGACY_PREFIX = 'osu-idle-addon:';
 
 export type SettingsStore<T extends object> = {
 	/** The full storage key, for debugging. */
@@ -47,7 +49,7 @@ export const createSettings = <T extends object>(
 
 		load(): T {
 			try {
-				const raw = localStorage.getItem(key);
+				const raw = localStorage.getItem(key) ?? localStorage.getItem(`${LEGACY_PREFIX}${namespace}`);
 				if (!raw) return { ...defaults };
 
 				const stored = JSON.parse(raw) as Partial<T>;

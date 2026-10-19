@@ -1,7 +1,7 @@
 /**
  * The add-on contract.
  *
- * osu!idle loads an add-on by turning its `source` into a Blob URL and
+ * oss!idle loads an add-on by turning its `source` into a Blob URL and
  * `import()`ing it in the page realm, then calling the module's `mount` /
  * `unmount` exports - that pair *is* the contract, and nothing else is passed
  * in. Everything a useful add-on needs (the game's database, its beatmap store,

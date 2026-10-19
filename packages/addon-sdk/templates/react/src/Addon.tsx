@@ -8,7 +8,7 @@
  */
 
 import type { ReactNode } from 'react';
-import { ReactAddon } from '@osu-idle/addon-sdk/react';
+import { ReactAddon } from '@oss-idle/addon-sdk/react';
 import Panel from './Panel.js';
 import styles from './styles.css';
 

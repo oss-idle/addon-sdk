@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * osu-idle-addon - the osu!idle Addon SDK command line.
+ * oss-idle-addon - the oss!idle Addon SDK command line.
  *
- *   osu-idle-addon init [dir] [--name "My Add-on"] [--template react|plain]
- *   osu-idle-addon build [--config addon.config.json] [--minify] [--watch]
+ *   oss-idle-addon init [dir] [--name "My Add-on"] [--template react|plain]
+ *   oss-idle-addon build [--config addon.config.json] [--minify] [--watch]
  */
 import { readFile } from 'node:fs/promises';
 import { existsSync, watch } from 'node:fs';
@@ -28,15 +28,15 @@ const positional = () => {
 	return undefined;
 };
 
-const usage = `osu!idle Addon SDK
+const usage = `oss!idle Addon SDK
 
-  osu-idle-addon init [dir]        create a new add-on project
+  oss-idle-addon init [dir]        create a new add-on project
     --name "My Add-on"             display name (default: the directory name)
     --template ${TEMPLATE_NAMES.join('|').padEnd(20)}starting point (default: react)
     --license <spdx>               default: AGPL-3.0-only
     --force                        write into a non-empty directory
 
-  osu-idle-addon build             bundle the add-on into one ES module
+  oss-idle-addon build             bundle the add-on into one ES module
     --config <path>                default: addon.config.json
     --minify                       smaller, but harder for a reviewer to read
     --sourcemap                    inline source map
@@ -80,7 +80,7 @@ const { bundleAddon } = await import('../dist/build/index.js');
 
 const configPath = resolve(option('config', 'addon.config.json'));
 if (!existsSync(configPath)) {
-	die(`No config at ${configPath}.\nRun "osu-idle-addon init" to create a project, or pass --config.`);
+	die(`No config at ${configPath}.\nRun "oss-idle-addon init" to create a project, or pass --config.`);
 }
 
 const config = JSON.parse(await readFile(configPath, 'utf8'));
@@ -104,7 +104,7 @@ const run = async () => {
 	const { outfile, bytes } = await bundleAddon({
 		entry: resolve(cwd, config.entry),
 		outfile: resolve(cwd, config.outfile),
-		gameRoot: process.env.OSU_IDLE_PATH ?? config.gameRoot,
+		gameRoot: process.env.OSS_IDLE_PATH ?? config.gameRoot,
 		minify: flag('minify') || !!config.minify,
 		sourcemap: flag('sourcemap'),
 		stubModules: config.stubModules,
@@ -113,7 +113,7 @@ const run = async () => {
 		meta: {
 			name: config.name,
 			version: pkgVersion,
-			gameVersion: process.env.OSU_IDLE_GAME_VERSION ?? config.gameVersion,
+			gameVersion: process.env.OSS_IDLE_GAME_VERSION ?? config.gameVersion,
 			license: config.license,
 		},
 	});

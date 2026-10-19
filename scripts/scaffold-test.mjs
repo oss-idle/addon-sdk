@@ -50,7 +50,7 @@ for (const template of ['react', 'plain']) {
 
 	// Point the generated project at this working copy of the SDK, install, build.
 	const pkg = JSON.parse(await readFile(join(dir, 'package.json'), 'utf8'));
-	pkg.dependencies['@osu-idle/addon-sdk'] = `file:${REPO}/packages/addon-sdk`;
+	pkg.dependencies['@oss-idle/addon-sdk'] = `file:${REPO}/packages/addon-sdk`;
 	await writeFile(join(dir, 'package.json'), JSON.stringify(pkg, null, 2));
 
 	try {
@@ -73,7 +73,7 @@ for (const template of ['react', 'plain']) {
 	const sdkVersion = JSON.parse(
 		await readFile(join(REPO, 'packages/addon-sdk/package.json'), 'utf8')).version;
 	check(`${template}: banner names the SDK that built it`,
-		code.includes(`@osu-idle/addon-sdk v${sdkVersion}`), 'sdk version missing from banner');
+		code.includes(`@oss-idle/addon-sdk v${sdkVersion}`), 'sdk version missing from banner');
 
 	// Banner and runtime both report the package.json version.
 	const pkgVersion = JSON.parse(await readFile(join(dir, 'package.json'), 'utf8')).version;

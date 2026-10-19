@@ -4,7 +4,7 @@ import { dirname, resolve } from 'node:path';
 import type { Plugin } from 'esbuild';
 
 /**
- * Resolve `@osu-idle/shared/*` against a checkout of the game.
+ * Resolve `@oss-idle/shared/*` against a checkout of the game.
  *
  * The package is `private: true` and never published, so there is nothing to
  * install - the add-on compiles the game's TypeScript sources into its own
@@ -17,17 +17,17 @@ import type { Plugin } from 'esbuild';
  * {@link tsExtensionPlugin} map `.js` back onto the `.ts` that produced it.
  */
 export const sharedSourcePlugin = (sharedSrc: string): Plugin => ({
-	name: 'osu-idle-shared-source',
+	name: 'oss-idle-shared-source',
 	setup(build) {
-		build.onResolve({ filter: /^@osu-idle\/shared(\/.*)?$/ }, args => {
-			const subpath = args.path.replace(/^@osu-idle\/shared\/?/, '') || 'index';
+		build.onResolve({ filter: /^@oss-idle\/shared(\/.*)?$/ }, args => {
+			const subpath = args.path.replace(/^@oss-idle\/shared\/?/, '') || 'index';
 			const base = resolve(sharedSrc, subpath.replace(/\.js$/, ''));
 			for (const candidate of [`${base}.ts`, `${base}.tsx`, resolve(base, 'index.ts')]) {
 				if (existsSync(candidate)) return { path: candidate };
 			}
 			return {
 				errors: [{
-					text: `Cannot resolve "${args.path}" in the osu!idle checkout (looked under ${sharedSrc})`,
+					text: `Cannot resolve "${args.path}" in the oss!idle checkout (looked under ${sharedSrc})`,
 				}],
 			};
 		});

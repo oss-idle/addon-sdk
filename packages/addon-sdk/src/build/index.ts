@@ -1,7 +1,7 @@
 /**
  * The add-on bundler.
  *
- * osu!idle stores an add-on as one `source` string and loads it with
+ * oss!idle stores an add-on as one `source` string and loads it with
  * `import(URL.createObjectURL(new Blob([source])))`. A Blob module has no base
  * URL and no import map, so **nothing** resolves at load time: React, the
  * game's simulation, workers and CSS must all already be inside that one file,
@@ -48,7 +48,7 @@ export type BundleOptions = {
 	entry: string;
 	/** Where to write the single-file add-on source. */
 	outfile: string;
-	/** Root of an osu!idle checkout, to resolve `@osu-idle/shared` against. */
+	/** Root of an oss!idle checkout, to resolve `@oss-idle/shared` against. */
 	gameRoot?: string;
 	/** Banner metadata, so a reader can tell what the file is. */
 	meta?: { name?: string; version?: string; gameVersion?: string; license?: string };
@@ -138,7 +138,7 @@ export type BundleResult = {
  * a reader asks what built a bundle they are holding.
  */
 const sdkVersion: string =
-	createRequire(import.meta.url)('@osu-idle/addon-sdk/package.json').version;
+	createRequire(import.meta.url)('@oss-idle/addon-sdk/package.json').version;
 
 /** Bundle an add-on into the single ES module the runtime loads. */
 export const bundleAddon = async (options: BundleOptions): Promise<BundleResult> => {
@@ -157,7 +157,7 @@ export const bundleAddon = async (options: BundleOptions): Promise<BundleResult>
 	const result = await esbuild({
 		...base,
 		// Read back at runtime by `buildMeta()`.
-		define: { ...base.define, __OSU_IDLE_ADDON__: JSON.stringify({ ...meta, sdkVersion }) },
+		define: { ...base.define, __OSS_IDLE_ADDON__: JSON.stringify({ ...meta, sdkVersion }) },
 		entryPoints: [entry],
 		write: false,
 		sourcemap: sourcemap ? 'inline' : false,
@@ -174,9 +174,9 @@ export const bundleAddon = async (options: BundleOptions): Promise<BundleResult>
 	const banner = meta
 		? [
 			'// ' + [meta.name, meta.version && `v${meta.version}`].filter(Boolean).join(' '),
-			meta.gameVersion && `// built against osu!idle ${meta.gameVersion}`,
+			meta.gameVersion && `// built against oss!idle ${meta.gameVersion}`,
 			meta.license && `// ${meta.license}`,
-			`// Bundled with @osu-idle/addon-sdk v${sdkVersion}. Paste this file into the add-on editor.`,
+			`// Bundled with @oss-idle/addon-sdk v${sdkVersion}. Paste this file into the add-on editor.`,
 		].filter(Boolean).join('\n') + '\n\n'
 		: '';
 

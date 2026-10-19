@@ -1,6 +1,6 @@
 import { Addon } from './addon.js';
 
-/** The module shape osu!idle's add-on runtime imports and drives. */
+/** The module shape oss!idle's add-on runtime imports and drives. */
 export type AddonModule = {
 	mount: () => void;
 	unmount: () => void;

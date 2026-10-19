@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { gameCharacter, type CharacterRow } from '@osu-idle/addon-sdk';
+import { gameCharacter, type CharacterRow } from '@oss-idle/addon-sdk';
 
 export default function Panel({
 	open,

@@ -31,7 +31,7 @@ const handle = (): GameDb => {
 	const db = (window as unknown as { db?: GameDb }).db;
 	if (!db?.read) {
 		throw new Error(
-			'osu!idle database not found on window - the game has not opened it yet, ' +
+			'oss!idle database not found on window - the game has not opened it yet, ' +
 			'or this add-on is running outside the client.',
 		);
 	}
@@ -100,7 +100,7 @@ export const gameDb = {
 	async ready(timeoutMs = 30_000): Promise<void> {
 		const deadline = Date.now() + timeoutMs;
 		while (!this.available()) {
-			if (Date.now() > deadline) throw new Error('osu!idle database did not open in time');
+			if (Date.now() > deadline) throw new Error('oss!idle database did not open in time');
 			await new Promise(resolve => setTimeout(resolve, 100));
 		}
 	},

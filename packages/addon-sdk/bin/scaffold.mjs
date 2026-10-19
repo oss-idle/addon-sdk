@@ -1,7 +1,7 @@
 /**
  * Scaffolding a new add-on.
  *
- * Shared by `osu-idle-addon init` and by `npx @osu-idle/addon-sdk-create`, so both
+ * Shared by `oss-idle-addon init` and by `npx @oss-idle/addon-sdk-create`, so both
  * entry points produce exactly the same project.
  *
  * Templates are plain files with `__TOKEN__` placeholders rather than a
@@ -133,14 +133,14 @@ export const scaffold = async ({
 		private: true,
 		type: 'module',
 		license,
-		description: `${name} - an osu!idle add-on`,
+		description: `${name} - an oss!idle add-on`,
 		scripts: {
-			build: 'osu-idle-addon build',
-			dev: 'osu-idle-addon build --watch',
+			build: 'oss-idle-addon build',
+			dev: 'oss-idle-addon build --watch',
 			typecheck: 'tsc -p tsconfig.json --noEmit',
 		},
 		dependencies: {
-			'@osu-idle/addon-sdk': await sdkVersion(),
+			'@oss-idle/addon-sdk': await sdkVersion(),
 			...(react ? { react: '^18.3.1', 'react-dom': '^18.3.1' } : {}),
 		},
 		devDependencies: {

@@ -1,16 +1,16 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/osu-idle/addon-sdk/HEAD/icon.svg" alt="" width="112">
+  <img src="https://raw.githubusercontent.com/oss-idle/addon-sdk/HEAD/icon.svg" alt="" width="112">
 </p>
 
-<h1 align="center">osu!idle Addon SDK</h1>
+<h1 align="center">oss!idle Addon SDK</h1>
 
 <p align="center">
-  Build <a href="https://github.com/osu-idle/osu-idle">osu!idle</a> add-ons in
+  Build <a href="https://github.com/oss-idle/oss-idle">oss!idle</a> add-ons in
   TypeScript, with your dependencies bundled.
 </p>
 
 ```sh
-npx @osu-idle/addon-sdk-create@latest my-addon
+npx @oss-idle/addon-sdk-create@latest my-addon
 cd my-addon
 npm install
 npm run build
@@ -26,7 +26,7 @@ The game loads an add-on by importing its source as a Blob ES module and calling
 realm and reach for what they need themselves.
 
 ```ts
-import { Addon, defineAddon } from '@osu-idle/addon-sdk';
+import { Addon, defineAddon } from '@oss-idle/addon-sdk';
 
 class Hello extends Addon {
 	constructor() { super({ name: 'Hello' }); }
@@ -43,7 +43,7 @@ Two things follow from that, and they shape the whole SDK:
 
 1. **A Blob module resolves nothing** - no base URL, no import map. React, CSS,
    workers and any game code you use must already be inside the one emitted
-   file. That is what `osu-idle-addon build` produces.
+   file. That is what `oss-idle-addon build` produces.
 2. **`unmount` has to genuinely undo everything**, because add-ons are enabled,
    disabled, updated and removed without a page reload. Anything you register
    through `this.on`, `this.interval`, `this.timeout` or `this.own` is torn down
@@ -52,7 +52,7 @@ Two things follow from that, and they shape the whole SDK:
 ## React overlays
 
 ```tsx
-import { ReactAddon } from '@osu-idle/addon-sdk/react';
+import { ReactAddon } from '@oss-idle/addon-sdk/react';
 import styles from './styles.css';
 
 export class MyAddon extends ReactAddon {
@@ -104,7 +104,7 @@ exposes:
 ```ts
 import {
 	gameDb, gameCharacter, beatmapStore, playlists, recentPlayCounts,
-} from '@osu-idle/addon-sdk';
+} from '@oss-idle/addon-sdk';
 
 await gameDb.ready();                            // the client opens it lazily
 const me = await gameCharacter.live();           // who is being played
@@ -140,8 +140,8 @@ add-on predicting what a play is worth has to read it the same way.
 ## Remembering settings
 
 ```ts
-import { createSettings } from '@osu-idle/addon-sdk';
-import { usePersistedSettings } from '@osu-idle/addon-sdk/react';
+import { createSettings } from '@oss-idle/addon-sdk';
+import { usePersistedSettings } from '@oss-idle/addon-sdk/react';
 
 const DEFAULTS = { skill: 'total', runs: 3 };
 const store = createSettings('my-addon', DEFAULTS);
@@ -149,7 +149,7 @@ const store = createSettings('my-addon', DEFAULTS);
 const [settings, update] = usePersistedSettings(store, DEFAULTS);
 ```
 
-Keys live under `osu-idle-addon:<namespace>`, which matters: the client writes
+Keys live under `oss-idle-addon:<namespace>`, which matters: the client writes
 its own options under bare, unprefixed keys and parses them without a guard, so a
 collision would corrupt a game setting. Stored values merge over your defaults,
 so shipping a new setting does not invalidate what players saved, and every
@@ -161,7 +161,7 @@ it breaks the game and not just your add-on.
 ## Building
 
 ```sh
-osu-idle-addon build [--minify] [--watch] [--config addon.config.json]
+oss-idle-addon build [--minify] [--watch] [--config addon.config.json]
 ```
 
 ```jsonc
@@ -178,7 +178,7 @@ into the bundle, so `this.meta.version` reports the version that was built:
 ```ts
 super({ name: 'My Add-on' });   // version filled in by the bundler
 this.meta.version               // "0.1.0"
-buildMeta().gameVersion         // the osu!idle release it was built against
+buildMeta().gameVersion         // the oss!idle release it was built against
 ```
 
 The build fails if the output would not export `mount` - a bundle missing it
@@ -194,27 +194,27 @@ moderator before they go live.
 | `import styles from './x.css'` → string | For injecting into the overlay's shadow root. |
 | `import make from 'worker:./x.worker'` | Workers must travel inside the same file. Heavy work belongs off the main thread - the game is a rhythm game sharing it. |
 | `import bytes from './x.wasm?base64'` | Same reason: a Blob module cannot fetch a sibling asset. |
-| `gameRoot` → resolves `@osu-idle/shared/*` | The game's package is unpublished, so its TypeScript is compiled from a checkout (`$OSU_IDLE_PATH`). |
+| `gameRoot` → resolves `@oss-idle/shared/*` | The game's package is unpublished, so its TypeScript is compiled from a checkout (`$OSS_IDLE_PATH`). |
 | `dedupe` | Your sources and the game's come from different checkouts, so shared packages would otherwise be bundled twice - which silently breaks prototype patches and `instanceof`. |
 | `stubModules` | Trims a heavy dependency a game module imports but your add-on never calls. Stubs **throw** if reached. |
 
 ### Using the game's own code
 
-An add-on can bundle osu!idle's simulation, skills and helpers straight from a
+An add-on can bundle oss!idle's simulation, skills and helpers straight from a
 checkout:
 
 ```jsonc
 {
-  "gameRoot": "/path/to/osu-idle",       // or set $OSU_IDLE_PATH
+  "gameRoot": "/path/to/oss-idle",       // or set $OSS_IDLE_PATH
   "dedupe": ["osu-classes", "osu-parsers", "osu-mania-stable"]
 }
 ```
 
 ```ts
-import { ManiaGame } from '@osu-idle/shared/sim/maniaGame';
+import { ManiaGame } from '@oss-idle/shared/sim/maniaGame';
 ```
 
-Doing so makes your add-on a derivative work of osu!idle, which is **AGPL-3.0** -
+Doing so makes your add-on a derivative work of oss!idle, which is **AGPL-3.0** -
 so it must be AGPL-3.0 too. Pin the game version you built against; the sources
 are internal and do move between releases.
 

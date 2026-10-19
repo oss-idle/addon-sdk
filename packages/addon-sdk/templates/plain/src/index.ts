@@ -1,12 +1,12 @@
 /**
  * __ADDON_NAME__
  *
- * osu!idle loads an add-on by importing its built source as an ES module and
+ * oss!idle loads an add-on by importing its built source as an ES module and
  * calling `mount` / `unmount`. That pair is the whole contract - `defineAddon`
  * produces it from the class below.
  */
 
-import { Addon, defineAddon, gameDb } from '@osu-idle/addon-sdk';
+import { Addon, defineAddon, gameDb } from '@oss-idle/addon-sdk';
 
 class __CLASS__ extends Addon {
 
