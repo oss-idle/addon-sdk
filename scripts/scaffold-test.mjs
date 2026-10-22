@@ -85,7 +85,16 @@ for (const template of ['react', 'plain']) {
 	check(`${template}: no version literal in source`,
 		!(await readFile(join(dir, 'addon.config.json'), 'utf8')).includes('version'));
 	if (template === 'react') {
-		check('react: React is bundled in', code.length > 100_000, `${code.length} bytes`);
+		// `sharedReact`, on in the template: React is read from the game, not bundled.
+		check('react: React comes from the game', code.includes('globalThis.ossIdle'), 'no host read');
+		check('react: React is not bundled in', code.length < 100_000, `${code.length} bytes`);
+	}
+
+	try {
+		execFileSync('npm', ['run', 'lint'], { cwd: dir, stdio: 'pipe' });
+		check(`${template}: scaffolded project lints clean`, true);
+	} catch (e) {
+		check(`${template}: scaffolded project lints clean`, false, String(e.stdout ?? e).slice(-400));
 	}
 }
 

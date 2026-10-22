@@ -1,5 +1,14 @@
 export { Addon, type AddonMeta, type Disposer } from './runtime/addon.js';
 export { defineAddon, type AddonModule } from './runtime/define.js';
+export {
+	gameHost,
+	type AddonHost,
+	type EditorApi,
+	type EditorMetadata,
+	type EditorNote,
+	type EditorRender,
+	type EditorTimingPoint,
+} from './runtime/host.js';
 export { buildMeta, type BuildMeta } from './runtime/buildMeta.js';
 export {
 	HotkeyManager,

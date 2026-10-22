@@ -2,5 +2,6 @@
   "name": "__ADDON_NAME__",
   "license": "__LICENSE__",
   "entry": "src/index.ts",
-  "outfile": "dist/__SLUG__.js"
+  "outfile": "dist/__SLUG__.js",
+  "sharedReact": true
 }

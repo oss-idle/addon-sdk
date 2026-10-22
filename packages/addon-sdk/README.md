@@ -22,8 +22,11 @@ That emits one self-contained ES module. Paste it into the in-game add-on editor
 ## The contract
 
 The game loads an add-on by importing its source as a Blob ES module and calling
-`mount` / `unmount`. Nothing is injected; add-ons run unsandboxed in the page
-realm and reach for what they need themselves.
+`mount` / `unmount`. `mount` is handed the game's host (`this.host` in an
+`Addon`): its version, its React, and the editor for add-ons of the Editor type.
+Add-ons run unsandboxed in the page realm and reach for the rest themselves. The
+full guide, the editor API included, is at
+https://oss.idle.rhythmgamers.net/web/docs/addons.
 
 ```ts
 import { Addon, defineAddon } from '@oss-idle/addon-sdk';
@@ -48,6 +51,35 @@ Two things follow from that, and they shape the whole SDK:
    disabled, updated and removed without a page reload. Anything you register
    through `this.on`, `this.interval`, `this.timeout` or `this.own` is torn down
    for you, in reverse order, even if one teardown throws.
+
+## Editor add-ons
+
+An add-on of the Editor type (picked when you make it in game) reaches the map
+editor while it is open. Everything registered through the editor's API goes when
+the editor closes or the add-on unmounts.
+
+```ts
+class Mirror extends Addon {
+	constructor() { super({ name: 'Mirror' }); }
+
+	protected onMount() {
+		this.editor(editor => {
+			editor.addAction({
+				id: 'mirror-selection', label: 'Mirror the selected notes', keys: ['Alt+M'],
+				run: () => {
+					const picked = new Set(editor.selection());
+					editor.edit({
+						notes: editor.notes().map(note => picked.has(note)
+							? { ...note, column: editor.keys - 1 - note.column } : note),
+					});
+				},
+			});
+		});
+	}
+}
+```
+
+`EditorApi` and the other host types are exported from the package.
 
 ## React overlays
 
@@ -197,6 +229,7 @@ moderator before they go live.
 | `gameRoot` → resolves `@oss-idle/shared/*` | The game's package is unpublished, so its TypeScript is compiled from a checkout (`$OSS_IDLE_PATH`). |
 | `dedupe` | Your sources and the game's come from different checkouts, so shared packages would otherwise be bundled twice - which silently breaks prototype patches and `instanceof`. |
 | `stubModules` | Trims a heavy dependency a game module imports but your add-on never calls. Stubs **throw** if reached. |
+| `plugins` | Extra esbuild plugins for the add-on and its workers, run before the SDK's own - e.g. to redirect one of the game's imports to your own module. |
 
 ### Using the game's own code
 
@@ -217,6 +250,13 @@ import { ManiaGame } from '@oss-idle/shared/sim/maniaGame';
 Doing so makes your add-on a derivative work of oss!idle, which is **AGPL-3.0** -
 so it must be AGPL-3.0 too. Pin the game version you built against; the sources
 are internal and do move between releases.
+
+### The game's React
+
+Set `"sharedReact": true` in `addon.config.json` (the template does) and the
+bundle reads React from the game instead of shipping its own: one React on the
+page, and a smaller add-on. A game too old to hand out its React refuses the
+add-on with a message; leave the option off to support those.
 
 ## Licence
 

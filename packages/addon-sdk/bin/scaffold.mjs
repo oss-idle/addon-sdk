@@ -138,6 +138,7 @@ export const scaffold = async ({
 			build: 'oss-idle-addon build',
 			dev: 'oss-idle-addon build --watch',
 			typecheck: 'tsc -p tsconfig.json --noEmit',
+			lint: 'eslint .',
 		},
 		dependencies: {
 			'@oss-idle/addon-sdk': await sdkVersion(),
@@ -145,7 +146,9 @@ export const scaffold = async ({
 		},
 		devDependencies: {
 			...(react ? { '@types/react': '^18.3.12', '@types/react-dom': '^18.3.1' } : {}),
+			eslint: '^10.13.0',
 			typescript: '^5.6.3',
+			'typescript-eslint': '^8.72.0',
 		},
 	};
 	await writeFile(join(target, 'package.json'), JSON.stringify(pkg, null, 2) + '\n', 'utf8');

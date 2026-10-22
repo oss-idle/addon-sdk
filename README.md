@@ -20,6 +20,17 @@ This emits one self-contained ES module. Paste it into the in-game add-on editor
 
 **[Read the SDK documentation](packages/addon-sdk/README.md)**. The runtime contract, overlay rules, reading the game's state, and bundling the game's own simulation.
 
+Or let oss!idle build it: push it to a public git repository, create a **Built from a git repository** add-on in game, add the webhook it gives you, and release by tagging (`v1.2.3`). See the scaffolded README.
+
+## Building from a repository
+
+oss!idle builds a repository add-on itself, from the newest version tag: `npm ci --ignore-scripts`, then `npm run build` with no network, then it reads `outfile` from `addon.config.json`. So:
+
+- commit `package-lock.json`, never `dist/`;
+- nothing may need its install scripts or the network at build time, and no dependency may come from git (an https tarball is fine);
+- `gameRoot` has to point inside the repository: the builder has no oss!idle checkout and clones no submodules. Depend on a game release's tarball, pinned by commit (`"oss-idle": "https://codeload.github.com/oss-idle/oss-idle/tar.gz/<commit>"`), and point `gameRoot` at `node_modules/oss-idle`. Whatever the game's sources import that your add-on does not stub has to be your own dependency too;
+- `gameVersion` in `addon.config.json` names the game release it targets (default: the current one).
+
 ## What's provided
 
 - An **`Addon` base class** that records teardown for every listener, timer and overlay it hands you, because add-ons are enabled, disabled, updated and removed without a page reload.

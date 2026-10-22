@@ -53,7 +53,8 @@ try {
 	if (where !== '.') console.log(`  cd ${where}`);
 	console.log('  npm install');
 	console.log('  npm run build\n');
-	console.log(`Then paste ${result.outfile} into the in-game add-on editor.\n`);
+	console.log(`Then paste ${result.outfile} into the in-game add-on editor,`);
+	console.log('or push the folder to a public git repository and let oss!idle build it (see README.md).\n');
 } catch (e) {
 	console.error(e.message);
 	process.exit(1);

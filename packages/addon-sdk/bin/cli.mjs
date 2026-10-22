@@ -110,6 +110,7 @@ const run = async () => {
 		stubModules: config.stubModules,
 		dedupe: config.dedupe,
 		dedupeFrom: cwd,
+		sharedReact: !!config.sharedReact,
 		meta: {
 			name: config.name,
 			version: pkgVersion,

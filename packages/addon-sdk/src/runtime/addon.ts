@@ -3,9 +3,10 @@
  *
  * oss!idle loads an add-on by turning its `source` into a Blob URL and
  * `import()`ing it in the page realm, then calling the module's `mount` /
- * `unmount` exports - that pair *is* the contract, and nothing else is passed
- * in. Everything a useful add-on needs (the game's database, its beatmap store,
- * the DOM) it reaches for itself, because it runs unsandboxed on the page.
+ * `unmount` exports - that pair *is* the contract. `mount` is handed the game's
+ * host (its React, the editor for add-ons of the Editor type: {@link host});
+ * the rest (the game's database, its beatmap store, the DOM) an add-on reaches
+ * for itself, because it runs unsandboxed on the page.
  *
  * Two consequences shape this class:
  *
@@ -20,6 +21,11 @@
  */
 
 import { buildMeta } from './buildMeta.js';
+import {
+	gameHost,
+	type AddonHost,
+	type EditorApi,
+} from './host.js';
 
 /** A teardown returned by a registration; running it undoes that registration. */
 export type Disposer = () => void;
@@ -120,10 +126,32 @@ export abstract class Addon {
 	 * Public only because `defineAddon` lives outside the class and TypeScript
 	 * has no package-private visibility; the underscore marks it as off-limits.
 	 */
-	async _mount(): Promise<void> {
+	async _mount(host?: AddonHost): Promise<void> {
 		if (this.mounted) return;
 		this.mounted = true;
+		this.handed = host;
 		await this.onMount();
+	}
+
+	private handed?: AddonHost;
+
+	/** The game's host: React, the editor. Undefined on a game too old to hand one. */
+	protected get host(): AddonHost | undefined {
+		return this.handed ?? gameHost();
+	}
+
+	/**
+	 * Work with the editor while it is open (an add-on of the Editor type):
+	 * `onOpen` runs each time it opens, with its API. What is registered through
+	 * that API goes when the editor closes or this add-on unmounts.
+	 */
+	protected editor(onOpen: (editor: EditorApi) => void, onClose?: () => void): void {
+		const host = this.host;
+		if (!host) {
+			this.log.warn('this game hands add-ons no editor: update oss!idle');
+			return;
+		}
+		this.own(host.editor.watch(onOpen, onClose));
 	}
 
 	/**

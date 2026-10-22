@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { dirname, resolve } from 'node:path';
 import type { Plugin } from 'esbuild';
 
@@ -212,6 +213,33 @@ export const assetQueryPlugin = (): Plugin => ({
 			});
 			if (result.errors.length) return { errors: result.errors };
 			return { path: result.path, external: result.external };
+		});
+	},
+});
+
+/**
+ * React from the game instead of a bundled copy: each React import becomes a small
+ * module reading the game's own React off `globalThis.ossIdle.react`, which the game
+ * sets before it loads any add-on. Its named exports are the installed React's, read
+ * here at build time, so `import { useState } from 'react'` keeps working.
+ */
+export const hostReactPlugin = (fromDir: string): Plugin => ({
+	name: 'host-react',
+	setup(build) {
+		const requireFrom = createRequire(resolve(fromDir, 'package.json'));
+		build.onResolve({ filter: /^react(-dom)?(\/(client|jsx-runtime))?$/ }, args => ({
+			path: args.path, namespace: 'oss-idle-react',
+		}));
+		build.onLoad({ filter: /.*/, namespace: 'oss-idle-react' }, args => {
+			const names = Object.keys(requireFrom(args.path))
+				.filter(name => name !== 'default' && /^[A-Za-z_$][\w$]*$/.test(name));
+			const contents = [
+				`const m = globalThis.ossIdle?.react?.[${JSON.stringify(args.path)}];`,
+				'if (!m) throw new Error("This add-on uses the game\'s React: update oss!idle to run it");',
+				'export default m;',
+				...names.map(name => `export const ${name} = m.${name};`),
+			].join('\n');
+			return { contents, loader: 'js' };
 		});
 	},
 });

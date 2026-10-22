@@ -14,7 +14,7 @@
  * ask anyone to review.
  */
 
-import { build as esbuild, type BuildOptions } from 'esbuild';
+import { build as esbuild, type BuildOptions, type Plugin } from 'esbuild';
 import { createRequire } from 'node:module';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
@@ -22,6 +22,7 @@ import {
 	assetQueryPlugin,
 	cssTextPlugin,
 	dedupePlugin,
+	hostReactPlugin,
 	inlineWorkerPlugin,
 	sharedSourcePlugin,
 	stubModulePlugin,
@@ -37,6 +38,7 @@ export {
 	assetQueryPlugin,
 	cssTextPlugin,
 	dedupePlugin,
+	hostReactPlugin,
 	inlineWorkerPlugin,
 	sharedSourcePlugin,
 	stubModulePlugin,
@@ -68,6 +70,18 @@ export type BundleOptions = {
 	dedupe?: readonly string[];
 	/** Directory the deduped packages resolve from. Defaults to the entry's directory. */
 	dedupeFrom?: string;
+	/**
+	 * Extra esbuild plugins, for the add-on and every inlined worker. They run
+	 * before the SDK's own, so an `onResolve` here can redirect an import -
+	 * one of the game's own modules, say - before the SDK resolves it.
+	 */
+	plugins?: readonly Plugin[];
+	/**
+	 * Use the game's React (`globalThis.ossIdle.react`) instead of bundling one:
+	 * a much smaller add-on, and one React on the page. Needs an oss!idle that
+	 * hands its React to add-ons; an older one refuses the add-on with a message.
+	 */
+	sharedReact?: boolean;
 };
 
 const sharedSrcOf = (gameRoot: string) => resolve(gameRoot, 'packages/shared/src');
@@ -79,6 +93,7 @@ const baseOptions = (
 	stubModules: Record<string, readonly string[]> = {},
 	dedupe: readonly string[] = [],
 	dedupeFrom = process.cwd(),
+	plugins: readonly Plugin[] = [],
 ): BuildOptions => ({
 	bundle: true,
 	format: 'esm',
@@ -95,6 +110,7 @@ const baseOptions = (
 	loader: { '.wasm': 'base64' },
 	minify,
 	plugins: [
+		...plugins,
 		// Strip asset suffixes before anything tries to resolve them as modules.
 		assetQueryPlugin(),
 		// Dedupe first: it must see a bare package name before anything else
@@ -115,9 +131,10 @@ const buildWorkerSource = async (
 	stubModules: Record<string, readonly string[]>,
 	dedupe: readonly string[],
 	dedupeFrom: string,
+	plugins: readonly Plugin[],
 ): Promise<string> => {
 	const result = await esbuild({
-		...baseOptions(gameRoot, minify, stubModules, dedupe, dedupeFrom),
+		...baseOptions(gameRoot, minify, stubModules, dedupe, dedupeFrom, plugins),
 		entryPoints: [entry],
 		write: false,
 		// A worker built as ESM would need `type: 'module'` support *and* would
@@ -145,15 +162,17 @@ export const bundleAddon = async (options: BundleOptions): Promise<BundleResult>
 	const {
 		entry, outfile, gameRoot, meta,
 		minify = false, sourcemap = false, stubModules = {},
-		dedupe = [], dedupeFrom = dirname(resolve(entry)),
+		dedupe = [], dedupeFrom = dirname(resolve(entry)), plugins = [], sharedReact = false,
 	} = options;
 
 	// The SDK's React modules are imported from wherever npm put the SDK, so
 	// `react` resolves from there unless it is pointed back at the add-on that
-	// installed it - and two Reacts in one bundle break hooks outright.
-	const names = [...new Set(['react', 'react-dom', ...dedupe])];
+	// installed it - and two Reacts in one bundle break hooks outright. With the
+	// game's React there is none to bundle.
+	const names = [...new Set([...sharedReact ? [] : ['react', 'react-dom'], ...dedupe])];
+	const ownPlugins = sharedReact ? [hostReactPlugin(dedupeFrom), ...plugins] : plugins;
 
-	const base = baseOptions(gameRoot, minify, stubModules, names, dedupeFrom);
+	const base = baseOptions(gameRoot, minify, stubModules, names, dedupeFrom, ownPlugins);
 	const result = await esbuild({
 		...base,
 		// Read back at runtime by `buildMeta()`.
@@ -163,7 +182,7 @@ export const bundleAddon = async (options: BundleOptions): Promise<BundleResult>
 		sourcemap: sourcemap ? 'inline' : false,
 		plugins: [
 			inlineWorkerPlugin(workerEntry =>
-				buildWorkerSource(workerEntry, gameRoot, minify, stubModules, dedupe, dedupeFrom)),
+				buildWorkerSource(workerEntry, gameRoot, minify, stubModules, dedupe, dedupeFrom, plugins)),
 			...(base.plugins ?? []),
 		],
 	});
