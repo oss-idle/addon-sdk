@@ -78,8 +78,9 @@ export type BundleOptions = {
 	plugins?: readonly Plugin[];
 	/**
 	 * Use the game's React (`globalThis.ossIdle.react`) instead of bundling one:
-	 * a much smaller add-on, and one React on the page. Needs an oss!idle that
-	 * hands its React to add-ons; an older one refuses the add-on with a message.
+	 * a much smaller add-on, one React on the page, and no React to install
+	 * (`@types/react` is enough to typecheck). Needs an oss!idle that hands its
+	 * React to add-ons; an older one refuses the add-on with a message.
 	 */
 	sharedReact?: boolean;
 };
@@ -168,9 +169,10 @@ export const bundleAddon = async (options: BundleOptions): Promise<BundleResult>
 	// The SDK's React modules are imported from wherever npm put the SDK, so
 	// `react` resolves from there unless it is pointed back at the add-on that
 	// installed it - and two Reacts in one bundle break hooks outright. With the
-	// game's React there is none to bundle.
+	// game's React there is none to bundle, nor to install.
 	const names = [...new Set([...sharedReact ? [] : ['react', 'react-dom'], ...dedupe])];
-	const ownPlugins = sharedReact ? [hostReactPlugin(dedupeFrom), ...plugins] : plugins;
+	const ownPlugins = sharedReact ? [hostReactPlugin(), ...plugins] : plugins;
+	const workerPlugins = sharedReact ? [hostReactPlugin({ worker: true }), ...plugins] : plugins;
 
 	const base = baseOptions(gameRoot, minify, stubModules, names, dedupeFrom, ownPlugins);
 	const result = await esbuild({
@@ -182,7 +184,7 @@ export const bundleAddon = async (options: BundleOptions): Promise<BundleResult>
 		sourcemap: sourcemap ? 'inline' : false,
 		plugins: [
 			inlineWorkerPlugin(workerEntry =>
-				buildWorkerSource(workerEntry, gameRoot, minify, stubModules, dedupe, dedupeFrom, plugins)),
+				buildWorkerSource(workerEntry, gameRoot, minify, stubModules, dedupe, dedupeFrom, workerPlugins)),
 			...(base.plugins ?? []),
 		],
 	});

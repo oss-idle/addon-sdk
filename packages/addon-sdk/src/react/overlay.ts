@@ -8,11 +8,11 @@
  *
  * Input is isolated at the host element, where events from inside the shadow
  * tree bubble through - see `runtime/input.ts` for why bubble phase is the
- * right place for that.
+ * right place for that - and the game's focus kept out of the overlay's fields.
  */
 
 import type { Disposer } from '../runtime/addon.js';
-import { isolateInput } from '../runtime/input.js';
+import { isolateInput, keepFocus } from '../runtime/input.js';
 
 /**
  * Default stacking order: above every piece of game UI, below the cursor.
@@ -83,11 +83,13 @@ export const createOverlay = ({ id, styles, zIndex = OVERLAY_Z_INDEX }: OverlayO
 	document.body.append(host);
 
 	const releaseInput = isolateInput(host);
+	const releaseFocus = keepFocus(host);
 
 	return {
 		host,
 		container,
 		dispose: () => {
+			releaseFocus();
 			releaseInput();
 			host.remove();
 		},

@@ -13,6 +13,7 @@ export { buildMeta, type BuildMeta } from './runtime/buildMeta.js';
 export {
 	HotkeyManager,
 	isolateInput,
+	keepFocus,
 	parseHotkey,
 	type Hotkey,
 } from './runtime/input.js';

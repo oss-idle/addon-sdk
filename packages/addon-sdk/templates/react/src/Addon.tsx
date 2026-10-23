@@ -18,6 +18,9 @@ export class __CLASS__ extends ReactAddon {
 
 	private open = false;
 
+	/** Escape, taken only while the panel is open: closed, it is the game's. */
+	private escape?: () => void;
+
 	constructor() {
 		super({ name: '__ADDON_NAME__', overlayId: '__SLUG__', styles });
 	}
@@ -26,15 +29,16 @@ export class __CLASS__ extends ReactAddon {
 		// Registered in the capture phase, ahead of the game's own handlers, so
 		// the combo never reaches gameplay.
 		this.own(this.hotkeys.register(TOGGLE, () => this.toggle(), { allowInText: true }));
-		this.own(this.hotkeys.register('Escape', () => {
-			if (this.open) this.toggle();
-		}, { allowInText: true }));
 
 		this.log.info(`ready - press ${TOGGLE} to open`);
 	}
 
 	private toggle(): void {
 		this.open = !this.open;
+		this.escape?.();
+		this.escape = this.open
+			? this.hotkeys.register('Escape', () => this.toggle(), { allowInText: true })
+			: undefined;
 		this.refresh();
 	}
 

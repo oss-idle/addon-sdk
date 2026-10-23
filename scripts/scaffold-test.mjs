@@ -88,6 +88,14 @@ for (const template of ['react', 'plain']) {
 		// `sharedReact`, on in the template: React is read from the game, not bundled.
 		check('react: React comes from the game', code.includes('globalThis.ossIdle'), 'no host read');
 		check('react: React is not bundled in', code.length < 100_000, `${code.length} bytes`);
+		check('react: React is not even installed', !existsSync(join(dir, 'node_modules/react')));
+	}
+
+	try {
+		execFileSync('npm', ['run', 'typecheck'], { cwd: dir, stdio: 'pipe' });
+		check(`${template}: scaffolded project typechecks`, true);
+	} catch (e) {
+		check(`${template}: scaffolded project typechecks`, false, String(e.stdout ?? e).slice(-400));
 	}
 
 	try {

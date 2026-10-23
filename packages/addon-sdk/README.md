@@ -113,16 +113,24 @@ the moment the player closes it.
 
 ## Staying out of the game's way
 
-The client binds gameplay controls as **bubble-phase listeners on `window`**, and
-nothing in the capture phase - which is what lets an overlay coexist with it.
+The client binds gameplay controls as **bubble-phase listeners on `window`**,
+which is what lets an overlay coexist with it.
 
 - `isolateInput(root)`, applied for you by `createOverlay`, stops input events at
   the overlay's root while they bubble. The event still reached its target, so a
   text field types normally, but it never continues to `window` - typing "speed"
   into a filter box cannot press four gameplay keys, and scrolling a list cannot
   change the game's volume.
+- `keepFocus(root)`, also applied by `createOverlay`, keeps typing in the
+  overlay's fields. Since 1.2 the game holds focus in its topmost surface's box
+  (song select's search, the chat), judged by `document.activeElement` - the
+  shadow host, for a field in an overlay - so unguarded it takes focus from
+  every overlay field and each key typed there lands in its box.
 - `HotkeyManager` listens in the **capture** phase, ahead of every game handler,
-  so a shortcut claims its combo before gameplay sees it.
+  so a shortcut claims its combo before gameplay sees it. A claimed combo never
+  reaches the game, so take Escape only while your panel is open (the template
+  registers it on open): closed, Escape is the game's, to close its own topmost
+  surface.
 - Overlays default to `z-index: 50000` - above the game's UI, below its drawn
   cursor. Stack above the cursor layer (99999+) and the player loses their
   pointer entirely, because the game hides the system cursor with
@@ -255,7 +263,9 @@ are internal and do move between releases.
 
 Set `"sharedReact": true` in `addon.config.json` (the template does) and the
 bundle reads React from the game instead of shipping its own: one React on the
-page, and a smaller add-on. A game too old to hand out its React refuses the
+page, a smaller add-on, and no React to install - `@types/react` and
+`@types/react-dom` are enough to typecheck. A worker gets a React that loads
+but has nothing to render with. A game too old to hand out its React refuses the
 add-on with a message; leave the option off to support those.
 
 ## Licence

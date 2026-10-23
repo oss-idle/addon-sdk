@@ -1,6 +1,5 @@
 import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
-import { createRequire } from 'node:module';
 import { dirname, resolve } from 'node:path';
 import type { Plugin } from 'esbuild';
 
@@ -218,26 +217,49 @@ export const assetQueryPlugin = (): Plugin => ({
 });
 
 /**
+ * What the game's React (18.3, `globalThis.ossIdle.react`) exports, by import path:
+ * the names an add-on can import from it, without React installed to read them off.
+ */
+const HOST_REACT: Record<string, readonly string[]> = {
+	'react': [
+		'Children', 'Component', 'Fragment', 'Profiler', 'PureComponent', 'StrictMode', 'Suspense',
+		'__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED', 'act', 'cloneElement', 'createContext',
+		'createElement', 'createFactory', 'createRef', 'forwardRef', 'isValidElement', 'lazy', 'memo',
+		'startTransition', 'unstable_act', 'useCallback', 'useContext', 'useDebugValue',
+		'useDeferredValue', 'useEffect', 'useId', 'useImperativeHandle', 'useInsertionEffect',
+		'useLayoutEffect', 'useMemo', 'useReducer', 'useRef', 'useState', 'useSyncExternalStore',
+		'useTransition', 'version',
+	],
+	'react-dom': [
+		'__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED', 'createPortal', 'createRoot', 'findDOMNode',
+		'flushSync', 'hydrate', 'hydrateRoot', 'render', 'unmountComponentAtNode',
+		'unstable_batchedUpdates', 'unstable_renderSubtreeIntoContainer', 'version',
+	],
+	'react-dom/client': ['createRoot', 'hydrateRoot'],
+	'react/jsx-runtime': ['Fragment', 'jsx', 'jsxs'],
+};
+
+/**
  * React from the game instead of a bundled copy: each React import becomes a small
  * module reading the game's own React off `globalThis.ossIdle.react`, which the game
- * sets before it loads any add-on. Its named exports are the installed React's, read
- * here at build time, so `import { useState } from 'react'` keeps working.
+ * sets before it loads any add-on, so `import { useState } from 'react'` keeps working
+ * and React need not even be installed.
+ *
+ * A worker has no game React and nothing to render: there, React only has to load
+ * (for a module that imports a hook it never calls) and its exports are undefined.
  */
-export const hostReactPlugin = (fromDir: string): Plugin => ({
+export const hostReactPlugin = ({ worker = false }: { worker?: boolean } = {}): Plugin => ({
 	name: 'host-react',
 	setup(build) {
-		const requireFrom = createRequire(resolve(fromDir, 'package.json'));
-		build.onResolve({ filter: /^react(-dom)?(\/(client|jsx-runtime))?$/ }, args => ({
+		build.onResolve({ filter: new RegExp(`^(${Object.keys(HOST_REACT).join('|')})$`) }, args => ({
 			path: args.path, namespace: 'oss-idle-react',
 		}));
 		build.onLoad({ filter: /.*/, namespace: 'oss-idle-react' }, args => {
-			const names = Object.keys(requireFrom(args.path))
-				.filter(name => name !== 'default' && /^[A-Za-z_$][\w$]*$/.test(name));
 			const contents = [
-				`const m = globalThis.ossIdle?.react?.[${JSON.stringify(args.path)}];`,
-				'if (!m) throw new Error("This add-on uses the game\'s React: update oss!idle to run it");',
+				`const m = globalThis.ossIdle?.react?.[${JSON.stringify(args.path)}]${worker ? ' ?? {}' : ''};`,
+				...worker ? [] : ['if (!m) throw new Error("This add-on uses the game\'s React: update oss!idle to run it");'],
 				'export default m;',
-				...names.map(name => `export const ${name} = m.${name};`),
+				...HOST_REACT[args.path]!.map(name => `export const ${name} = m.${name};`),
 			].join('\n');
 			return { contents, loader: 'js' };
 		});

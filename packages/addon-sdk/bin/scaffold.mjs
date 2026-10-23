@@ -142,9 +142,9 @@ export const scaffold = async ({
 		},
 		dependencies: {
 			'@oss-idle/addon-sdk': await sdkVersion(),
-			...(react ? { react: '^18.3.1', 'react-dom': '^18.3.1' } : {}),
 		},
 		devDependencies: {
+			// React itself comes from the game (`sharedReact`): only its types are needed.
 			...(react ? { '@types/react': '^18.3.12', '@types/react-dom': '^18.3.1' } : {}),
 			eslint: '^10.13.0',
 			typescript: '^5.6.3',
