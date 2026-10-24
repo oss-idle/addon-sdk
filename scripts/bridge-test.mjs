@@ -1,7 +1,7 @@
 /**
  * Do the database bridges behave against a real database?
  *
- * Runs the built `playlists` and score helpers against sql.js carrying the
+ * Runs the built `gameDb` and score helpers against sql.js carrying the
  * client's own schema, with `window.db` stubbed by the same read/write contract
  * the client publishes - so the write path is exercised, not just the SQL.
  */
@@ -16,17 +16,6 @@ const db = new SQL.Database();
 
 // The client's schema, as its DDL generator emits it.
 db.run(`
-CREATE TABLE IF NOT EXISTS playlist (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL,
-  createdAt INTEGER NOT NULL
-);
-CREATE TABLE IF NOT EXISTS playlist_entry (
-  playlistId INTEGER NOT NULL,
-  beatmapId INTEGER NOT NULL,
-  PRIMARY KEY (playlistId, beatmapId)
-);
-CREATE INDEX IF NOT EXISTS idx_playlist_entry_beatmap ON playlist_entry(beatmapId);
 CREATE TABLE IF NOT EXISTS score (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   characterId INTEGER NOT NULL,
@@ -44,7 +33,7 @@ globalThis.window = {
 };
 
 const dist = join(REPO_ROOT, 'packages/addon-sdk/dist');
-const { playlists } = await import(pathToFileURL(join(dist, 'bridge/playlists.js')).href);
+const { gameDb } = await import(pathToFileURL(join(dist, 'bridge/db.js')).href);
 const { playCountsSince, recentPlayCounts } =
 	await import(pathToFileURL(join(dist, 'bridge/scores.js')).href);
 
@@ -54,57 +43,15 @@ const check = (name, cond, extra = '') => {
 	cond ? pass++ : (fail++, console.log('  FAIL:', name, extra));
 };
 
-// --- playlists ------------------------------------------------------------
+// --- gameDb ---------------------------------------------------------------
 
-const first = await playlists.replace('Rotation', [101, 102, 103]);
-check('reports it created', first.created === true);
-check('creates the playlist', rows('SELECT COUNT(*) FROM playlist')[0][0] === 1);
-check('inserts every entry', rows('SELECT COUNT(*) FROM playlist_entry')[0][0] === 3);
-
-const second = await playlists.replace('Rotation', [201, 202]);
-check('reports it replaced', second.created === false);
-check('does NOT create a second playlist', rows('SELECT COUNT(*) FROM playlist')[0][0] === 1);
-check('keeps the same playlist id', first.id === second.id, `${first.id} vs ${second.id}`);
-check('old entries are gone',
-	rows('SELECT beatmapId FROM playlist_entry ORDER BY beatmapId').flat().join() === '201,202');
-
-await playlists.replace('Rotation', [201]);
-check('shrinks correctly', rows('SELECT COUNT(*) FROM playlist_entry')[0][0] === 1);
-
-await playlists.replace('Other', [301, 302]);
-await playlists.replace('Rotation', [401]);
-check('overwriting one leaves the other alone',
-	rows("SELECT COUNT(*) FROM playlist_entry e JOIN playlist p ON p.id=e.playlistId WHERE p.name='Other'")[0][0] === 2);
-
-await playlists.replace('Dupes', [501, 501, 502]);
-check('duplicate ids collapse',
-	rows("SELECT COUNT(*) FROM playlist_entry e JOIN playlist p ON p.id=e.playlistId WHERE p.name='Dupes'")[0][0] === 2);
-
-await playlists.replace("Rob'); DROP TABLE playlist;--", [601]);
-check('quotes in names are safe', rows('SELECT COUNT(*) FROM playlist')[0][0] === 4);
-
-await playlists.replace('Empty', []);
-check('empty playlist is created with no entries',
-	rows("SELECT COUNT(*) FROM playlist_entry e JOIN playlist p ON p.id=e.playlistId WHERE p.name='Empty'")[0][0] === 0);
-
-db.run("INSERT INTO playlist (name, createdAt) VALUES ('Dupe', 1), ('Dupe', 2)");
-const dupeIds = rows("SELECT id FROM playlist WHERE name='Dupe' ORDER BY id").flat();
-const r1 = await playlists.replace('Dupe', [701]);
-const r2 = await playlists.replace('Dupe', [702]);
-check('picks the same duplicate every time', r1.id === r2.id, `${r1.id} vs ${r2.id}`);
-check('picks the oldest duplicate', r1.id === dupeIds[0], `${r1.id} vs ${dupeIds[0]}`);
-check('leaves the other duplicate alone',
-	rows(`SELECT COUNT(*) FROM playlist_entry WHERE playlistId=${dupeIds[1]}`)[0][0] === 0);
-
-const listed = await playlists.list();
-check('list reports entry counts', listed.find(p => p.name === 'Other')?.count === 2);
-check('entries returns the ids', (await playlists.entries(r1.id)).join() === '702');
-
-const removeTarget = await playlists.byName('Empty');
-await playlists.remove(removeTarget.id);
-check('remove deletes the playlist', (await playlists.byName('Empty')) === undefined);
-
-check('all mutations used the write path', writes > 0, `writes=${writes}`);
+const insertScore = { sql: 'INSERT INTO score (characterId, beatmapId, playedAt) VALUES (?, ?, ?)', params: [3, 950, 0] };
+await gameDb.run(insertScore.sql, insertScore.params);
+check('run goes through the write path', writes === 1, `writes=${writes}`);
+await gameDb.batch([insertScore, insertScore]);
+check('batch is one save', writes === 2, `writes=${writes}`);
+check('reads see the writes',
+	(await gameDb.value('SELECT COUNT(*) FROM score WHERE characterId = 3')) === 3);
 
 // --- scores ---------------------------------------------------------------
 

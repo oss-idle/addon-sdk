@@ -36,7 +36,7 @@ oss!idle builds a repository add-on itself, from the newest version tag: `npm ci
 - An **`Addon` base class** that records teardown for every listener, timer and overlay it hands you, because add-ons are enabled, disabled, updated and removed without a page reload.
 - **Shadow-root React overlays** that the game's CSS cannot reach and that cannot restyle the game, with input isolation so typing in your overlay never presses gameplay keys.
 - **Bridges** to the game's sql.js database, its beatmap store, the character
-  actually being played, the player's playlists and their play history.
+  actually being played and their play history.
 - A **bundler** that emits the single-file ES module the add-on runtime loads: CSS, workers and WebAssembly all inlined (React too, unless it uses the game's), because a Blob-loaded module resolves nothing at load time.
 
 ## Development
