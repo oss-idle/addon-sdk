@@ -137,6 +137,8 @@ export const scaffold = async ({
 		scripts: {
 			build: 'oss-idle-addon build',
 			dev: 'oss-idle-addon build --watch',
+			setup: 'oss-idle-addon setup',
+			release: 'oss-idle-addon release',
 			typecheck: 'tsc -p tsconfig.json --noEmit',
 			lint: 'eslint .',
 		},

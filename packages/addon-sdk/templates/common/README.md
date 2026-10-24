@@ -21,18 +21,23 @@ Instead of pasting, oss!idle can build your add-on from a public git repository
 (any host: GitHub, GitLab, Codeberg...):
 
 1. Push this folder with its `package-lock.json` (`dist/` stays out of git).
-2. In game, create an add-on, choose **Built from a git repository** and give the
-   repository's https address.
-3. Add the webhook address it shows to your repository as a push webhook.
-4. Release by tagging: `npm version patch && git push --follow-tags`.
+2. `npm run setup` checks the repository is buildable and prints what to fill in.
+3. In game, under Add-ons → Manage → **Create new add-on**, choose **Built from a git
+   repository** and fill it in.
+4. Add the webhook address it shows to your repository as a push webhook.
+5. Release with `npm run release` (or `npm run release -- minor`): it lints,
+   builds, tags the next version and pushes it.
 
-oss!idle refuses a built file that can run code nobody reviewed: `eval`, `new Function`,
+`npm run setup` reads the type from `"types"` in `addon.config.json`
+(`["gameplay"]`, `["editor"]` or both) and the tags from `keywords` in `package.json`.
+
+oss!idle refuses a built file that can run code players cannot read in it: `eval`, `new Function`,
 `import()`, imports from an address, script elements, string timers and the like.
 `npm run lint` flags them in your own code before you push.
 
 Each new version tag is built by oss!idle itself (`npm ci`, then `npm run build`,
-offline, with install scripts skipped) and goes to review; the moderator reads the
-repository's changes, never the bundle.
+offline, with install scripts skipped) and reaches players at once when the add-on is
+published. Add-ons are not reviewed: you are responsible for what yours does.
 
 ## How an add-on runs
 

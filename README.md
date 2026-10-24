@@ -20,7 +20,7 @@ This emits one self-contained ES module. Paste it into the in-game add-on editor
 
 **[Read the SDK documentation](packages/addon-sdk/README.md)**. The runtime contract, overlay rules, reading the game's state, and bundling the game's own simulation.
 
-Or let oss!idle build it: push it to a public git repository, create a **Built from a git repository** add-on in game, add the webhook it gives you, and release by tagging (`v1.2.3`). See the scaffolded README.
+Or let oss!idle build it: push it to a public git repository, run `npm run setup` for what to fill in when creating a **Built from a git repository** add-on in game, add the webhook it gives you, and release with `npm run release`. See the scaffolded README.
 
 ## Building from a repository
 

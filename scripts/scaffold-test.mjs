@@ -12,6 +12,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { scaffold, slugify, classify } from '../packages/addon-sdk/bin/scaffold.mjs';
+import { httpsUrl, repoProblems } from '../packages/addon-sdk/bin/repo.mjs';
 
 /** This repo, so the generated projects are built against *this* SDK. */
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -22,6 +23,17 @@ check('slugify strips punctuation', slugify('My Cool Add-on!') === 'my-cool-add-
 check('slugify survives junk', slugify('!!!') === 'my-addon');
 check('classify makes a class name', classify('my-cool-addon') === 'MyCoolAddon');
 check('classify avoids a leading digit', classify('4k-helper') === 'Addon4kHelper');
+
+check('scp remote to https', httpsUrl('git@github.com:you/x.git') === 'https://github.com/you/x.git');
+check('ssh remote to https', httpsUrl('ssh://git@gitlab.com:2222/you/x') === 'https://gitlab.com/you/x');
+check('https remote drops credentials', httpsUrl('https://me:tok@codeberg.org/you/x') === 'https://codeberg.org/you/x');
+check('local remote has no https form', httpsUrl('/srv/git/x.git') === undefined);
+
+// `npm version` commits: give git an identity whatever the machine has.
+Object.assign(process.env, {
+	GIT_AUTHOR_NAME: 'test', GIT_AUTHOR_EMAIL: 'test@example.com',
+	GIT_COMMITTER_NAME: 'test', GIT_COMMITTER_EMAIL: 'test@example.com',
+});
 
 const root = await mkdtemp(join(tmpdir(), 'sdk-scaffold-'));
 
@@ -103,6 +115,29 @@ for (const template of ['react', 'plain']) {
 		check(`${template}: scaffolded project lints clean`, true);
 	} catch (e) {
 		check(`${template}: scaffolded project lints clean`, false, String(e.stdout ?? e).slice(-400));
+	}
+
+	if (template !== 'plain') continue;
+
+	// Release: an https origin to fetch from, a local bare repository to push to.
+	const git = (...a) => execFileSync('git', a, { cwd: dir, encoding: 'utf8', stdio: 'pipe' }).trim();
+	git('init', '-q', '-b', 'main');
+	check('plain: not ready before anything is committed',
+		repoProblems(dir, config).some(p => p.includes('package-lock.json')));
+	const bare = join(root, 'remote.git');
+	execFileSync('git', ['init', '-q', '--bare', bare]);
+	git('remote', 'add', 'origin', 'https://example.invalid/you/test-add-on.git');
+	git('remote', 'set-url', '--push', 'origin', bare);
+	git('add', '.');
+	git('commit', '-qm', 'init');
+	check('plain: ready once committed', repoProblems(dir, config).length === 0,
+		repoProblems(dir, config).join('; '));
+	try {
+		execFileSync('npm', ['run', 'release', '--', 'minor'], { cwd: dir, stdio: 'pipe' });
+		const tags = execFileSync('git', ['ls-remote', '--tags', bare], { encoding: 'utf8' });
+		check('plain: release pushes the next version tag', tags.includes('refs/tags/v0.2.0'), tags);
+	} catch (e) {
+		check('plain: release runs', false, String(e.stderr ?? e.stdout ?? e).slice(-400));
 	}
 }
 

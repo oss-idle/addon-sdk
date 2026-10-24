@@ -225,8 +225,8 @@ The build fails if the output would not export `mount` - a bundle missing it
 loads without error and does nothing, which is miserable to debug from inside the
 game.
 
-Output is **not minified by default**: published add-ons are read by a human
-moderator before they go live.
+Output is **not minified by default**: players read an add-on's code before they
+trust it.
 
 | Feature | Why it exists |
 |---|---|
@@ -238,6 +238,20 @@ moderator before they go live.
 | `dedupe` | Your sources and the game's come from different checkouts, so shared packages would otherwise be bundled twice - which silently breaks prototype patches and `instanceof`. |
 | `stubModules` | Trims a heavy dependency a game module imports but your add-on never calls. Stubs **throw** if reached. |
 | `plugins` | Extra esbuild plugins for the add-on and its workers, run before the SDK's own - e.g. to redirect one of the game's imports to your own module. |
+
+### Releasing from a repository
+
+```sh
+oss-idle-addon setup             # check the repository, print the in-game form's values
+oss-idle-addon release [bump]    # lint, build, tag v<next> and push; bump: patch|minor|major|1.2.3
+```
+
+`setup` refuses what oss!idle's builder would fail on (no committed lockfile, a
+git dependency, a `gameRoot` outside the repository, a repository that needs
+credentials) and prints the name, https address, description, type
+(`"types"` in `addon.config.json`, default `["gameplay"]`) and tags (`keywords`)
+to fill in. `release` needs a clean tree; once the tag is pushed, the
+repository's webhook has oss!idle build it.
 
 ### Using the game's own code
 

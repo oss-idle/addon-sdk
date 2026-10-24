@@ -1,9 +1,9 @@
 import tseslint from 'typescript-eslint';
 
-// oss!idle refuses an add-on whose built file can run code nobody reviewed: text turned
+// oss!idle refuses an add-on whose built file can run code players cannot read: text turned
 // into code, or code loaded from elsewhere. It checks the bundle when you publish;
 // `npm run lint` tells you sooner, in your own code.
-const NOT_REVIEWED = 'oss!idle refuses code that runs what was not reviewed';
+const NOT_READABLE = 'oss!idle refuses code that runs what players cannot read';
 
 export default tseslint.config(
 	{ ignores: ['dist/', 'node_modules/'] },
@@ -22,31 +22,31 @@ export default tseslint.config(
 			'no-script-url': 'error',
 			'no-restricted-globals': ['error', 'eval', 'Function', 'importScripts'],
 			'no-restricted-properties': ['error',
-				{ object: 'document', property: 'write', message: NOT_REVIEWED },
-				{ object: 'document', property: 'writeln', message: NOT_REVIEWED },
-				{ property: 'eval', message: NOT_REVIEWED },
-				{ property: 'Function', message: NOT_REVIEWED },
-				{ property: 'srcdoc', message: NOT_REVIEWED },
-				{ property: 'createContextualFragment', message: NOT_REVIEWED },
-				{ property: 'serviceWorker', message: NOT_REVIEWED },
+				{ object: 'document', property: 'write', message: NOT_READABLE },
+				{ object: 'document', property: 'writeln', message: NOT_READABLE },
+				{ property: 'eval', message: NOT_READABLE },
+				{ property: 'Function', message: NOT_READABLE },
+				{ property: 'srcdoc', message: NOT_READABLE },
+				{ property: 'createContextualFragment', message: NOT_READABLE },
+				{ property: 'serviceWorker', message: NOT_READABLE },
 			],
 			'no-restricted-syntax': ['error',
-				{ selector: 'ImportExpression', message: `import() loads code from elsewhere: ${NOT_REVIEWED}` },
+				{ selector: 'ImportExpression', message: `import() loads code from elsewhere: ${NOT_READABLE}` },
 				{
 					selector: 'ImportDeclaration[source.value=/^([a-z]+:|\\/\\/)/i]',
-					message: `Imports from an address load code from elsewhere: ${NOT_REVIEWED}`,
+					message: `Imports from an address load code from elsewhere: ${NOT_READABLE}`,
 				},
 				{
 					selector: 'CallExpression[callee.property.name=/^createElement(NS)?$/] > Literal[value=/^\\s*script\\s*$/i]',
-					message: `A script element loads or runs code: ${NOT_REVIEWED}`,
+					message: `A script element loads or runs code: ${NOT_READABLE}`,
 				},
 				{
 					selector: 'CallExpression[callee.property.name=/^setAttribute(NS)?$/] > Literal[value=/^on/i]',
-					message: `An on… attribute runs its text as code: use addEventListener. ${NOT_REVIEWED}`,
+					message: `An on… attribute runs its text as code: use addEventListener. ${NOT_READABLE}`,
 				},
 				{
 					selector: 'CallExpression[callee.property.name="constructor"], NewExpression[callee.property.name="constructor"]',
-					message: `A function's constructor builds code from text: ${NOT_REVIEWED}`,
+					message: `A function's constructor builds code from text: ${NOT_READABLE}`,
 				},
 			],
 		},

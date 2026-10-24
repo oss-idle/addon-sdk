@@ -9,9 +9,8 @@
  *
  * That is what this produces.
  *
- * Output is **not minified by default**. Published add-ons are read by a human
- * moderator before they go live, and a single minified line is a poor thing to
- * ask anyone to review.
+ * Output is **not minified by default**. Players read an add-on's code before
+ * they trust it, and a single minified line is a poor thing to ask anyone to read.
  */
 
 import { build as esbuild, type BuildOptions, type Plugin } from 'esbuild';

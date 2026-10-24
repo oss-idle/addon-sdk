@@ -4,11 +4,15 @@
  *
  *   oss-idle-addon init [dir] [--name "My Add-on"] [--template react|plain]
  *   oss-idle-addon build [--config addon.config.json] [--minify] [--watch]
+ *   oss-idle-addon setup
+ *   oss-idle-addon release [patch|minor|major|<version>]
  */
 import { readFile } from 'node:fs/promises';
-import { existsSync, watch } from 'node:fs';
+import { existsSync, statSync, watch } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { resolve, relative } from 'node:path';
 import { scaffold, TEMPLATE_NAMES } from './scaffold.mjs';
+import { git, isPublic, MAX_BUNDLE, repoProblems, repoUrl } from './repo.mjs';
 
 const argv = process.argv.slice(2);
 const command = argv[0] && !argv[0].startsWith('-') ? argv[0] : 'build';
@@ -38,9 +42,15 @@ const usage = `oss!idle Addon SDK
 
   oss-idle-addon build             bundle the add-on into one ES module
     --config <path>                default: addon.config.json
-    --minify                       smaller, but harder for a reviewer to read
+    --minify                       smaller, but harder for players to read
     --sourcemap                    inline source map
     --watch                        rebuild on change
+
+  oss-idle-addon setup             check the repository is ready for oss!idle to
+                                   build, and print what to fill in in game
+
+  oss-idle-addon release [bump]    lint, build, tag the next version and push it
+                                   bump: patch (default), minor, major or 1.2.3
 `;
 
 const die = (message) => { console.error(message); process.exit(1); };
@@ -72,11 +82,7 @@ if (command === 'init') {
 	process.exit(0);
 }
 
-if (command !== 'build') die(`Unknown command "${command}".\n\n${usage}`);
-
-// ---- build ---------------------------------------------------------------
-
-const { bundleAddon } = await import('../dist/build/index.js');
+if (!['build', 'setup', 'release'].includes(command)) die(`Unknown command "${command}".\n\n${usage}`);
 
 const configPath = resolve(option('config', 'addon.config.json'));
 if (!existsSync(configPath)) {
@@ -98,6 +104,75 @@ if (!config.entry || !config.outfile) {
 const pkgVersion = await readFile(resolve(cwd, 'package.json'), 'utf8')
 	.then(raw => JSON.parse(raw).version)
 	.catch(() => undefined);
+
+const bail = (problems) => die(`Not ready for oss!idle to build:\n${problems.map(p => `  - ${p}`).join('\n')}`);
+
+// ---- setup ---------------------------------------------------------------
+
+if (command === 'setup') {
+	const problems = repoProblems(cwd, config);
+	if (problems.length) bail(problems);
+
+	const url = repoUrl(cwd);
+	if (!isPublic(url)) {
+		bail([`${url} does not answer without credentials: make it public and push it.`]);
+	}
+
+	const pkg = JSON.parse(await readFile(resolve(cwd, 'package.json'), 'utf8'));
+	const rows = [
+		['Name', config.name],
+		['Repository', url],
+		['Description', pkg.description],
+		['Type', (config.types ?? ['gameplay']).join(', ')],
+		['Tags', pkg.keywords?.join(', ')],
+	];
+	console.log('In game: Options → Add-ons → Manage → Create new add-on,');
+	console.log('choose "Built from a git repository" and fill in:\n');
+	for (const [label, value] of rows.filter(([, value]) => value)) console.log(`  ${label.padEnd(12)} ${value ?? ''}`);
+	console.log('\nSave it, then add the webhook address it shows to the repository as a push webhook.');
+	console.log('Release with "npx oss-idle-addon release" (each version tag is built by oss!idle).');
+	process.exit(0);
+}
+
+// ---- release -------------------------------------------------------------
+
+if (command === 'release') {
+	const problems = repoProblems(cwd, config);
+	if (git(cwd, 'status', '--porcelain')) problems.push('Uncommitted changes: commit or stash them first.');
+	if (problems.length) bail(problems);
+
+	const pkg = JSON.parse(await readFile(resolve(cwd, 'package.json'), 'utf8'));
+	const npm = (...npmArgs) => execFileSync('npm', npmArgs, { cwd, stdio: 'inherit' });
+	try {
+		// what oss!idle refuses, flagged in the sources before it is in a tag
+		if (pkg.scripts?.lint) npm('run', 'lint');
+		npm('run', 'build');
+	} catch {
+		die('Fix the errors above, then release again.');
+	}
+
+	const outfile = resolve(cwd, config.outfile);
+	if (!existsSync(outfile)) die(`npm run build did not emit ${config.outfile}.`);
+	if (statSync(outfile).size > MAX_BUNDLE) {
+		die(`${config.outfile} is over ${MAX_BUNDLE / 1024 / 1024} MB, the most oss!idle accepts.`);
+	}
+
+	const bump = positional() ?? 'patch';
+	// commits package.json and its lockfile, and tags v<version>
+	const tag = execFileSync('npm', ['version', bump, '-m', 'Release %s'], { cwd, encoding: 'utf8' })
+		.trim().split('\n').at(-1);
+	try {
+		git(cwd, 'push', '--atomic', 'origin', 'HEAD', `refs/tags/${tag}`);
+	} catch (e) {
+		die(`${e.stderr ?? e.message}\n${tag} is tagged here but not pushed: git push --atomic origin HEAD ${tag}`);
+	}
+	console.log(`Pushed ${tag}. oss!idle builds it when the webhook fires: its builds show in game.`);
+	process.exit(0);
+}
+
+// ---- build ---------------------------------------------------------------
+
+const { bundleAddon } = await import('../dist/build/index.js');
 
 const run = async () => {
 	const started = Date.now();
